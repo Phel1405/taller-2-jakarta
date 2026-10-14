@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="3.2" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd">
+	<persistence-unit name="Taller-Database">
+		<!-- JNDI name configured in your WildFly standalone.xml / standalone-full.xml -->
+		<jta-data-source>java:jboss/datasources/MySQLDS</jta-data-source>
+
+		<class>com.app.datos.entities.Solicitud</class>
+		<properties>
+			<!-- Automatically creates tables in your empty database based on @Entity classes -->
+			<property name="jakarta.persistence.schema-generation.database.action" value="create"/>
+			
+			<!-- Optional: Displays generated SQL queries in the WildFly logs for debugging -->
+			<property name="hibernate.show_sql" value="true"/>
+			<property name="hibernate.format_sql" value="true"/>
+		</properties>
+	</persistence-unit>
+</persistence>

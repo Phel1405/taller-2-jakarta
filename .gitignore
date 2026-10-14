@@ -1,0 +1,57 @@
+# ==========================================
+# Eclipse IDE files
+# ==========================================
+.metadata/
+.recommenders/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+
+# Project-specific Eclipse files (ignore build outputs & metadata)
+.settings/
+.buildpath
+.project
+
+# Exception: If you share Eclipse project structures across your team,
+# comment out .project and .buildpath above, but always keep .settings/ ignored.
+
+# ==========================================
+# Compiled Output & Build Directories
+# ==========================================
+bin/
+build/
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.rar
+
+# ==========================================
+# WildFly / JBoss local runtime logs & data
+# ==========================================
+**/standalone/deployments/
+**/standalone/log/
+**/standalone/tmp/
+**/standalone/data/
+
+# ==========================================
+# OS Generated Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==========================================
+# Database & Secrets
+# ==========================================
+*.db
+*.sqlite
+*.log
+*.env
