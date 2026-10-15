@@ -105,6 +105,16 @@ También puedes conectarte con un cliente gráfico (DBeaver, MySQL Workbench, et
 > `persistence.xml` usa `schema-generation ... = create` e intenta crear la tabla en
 > cada arranque. Si quieres empezar con la base vacía, usa `docker compose down -v`.
 
+> **Cambio de esquema (una sola vez):** la entidad pasó de la tabla `Solicitud`
+> (versión inicial) a `solicitud`, con columnas nuevas (`cantidad_requerida`, y
+> `prioridad` y `estado` como enums). Como `persistence.xml` solo hace `create`
+> (no actualiza tablas), si ya habías levantado el entorno antes de este cambio
+> ejecuta **una vez**:
+>
+> ```bash
+> docker compose down -v && docker compose up --build
+> ```
+
 ---
 
 ## Usuarios y credenciales de desarrollo
