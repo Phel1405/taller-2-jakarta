@@ -9,7 +9,7 @@ Proyecto Maven multi-módulo con una arquitectura de 3 niveles:
 | `DatosInterface` | jar | Interfaces remotas del tier de datos. |
 | `Logica` | ejb | EJB del tier de negocio. |
 | `Datos` | ejb | EJB y entidades JPA del tier de datos. |
-| `Cliente` | jar | Cliente de consola (clase `Principal`). |
+| `Cliente` | jar | Cliente de consola (`com.app.cliente.Principal`). |
 | `LogicaEAR` | ear | Empaqueta `Logica`. Se despliega en el WildFly de **logica**. |
 | `DatosEAR` | ear | Empaqueta `Datos`. Se despliega en el WildFly de **datos**. |
 
@@ -202,6 +202,28 @@ Variables opcionales del cliente:
 
 ---
 
+## Cómo ejecutar las pruebas
+
+Las pruebas unitarias de `Logica` (JUnit 5) **no necesitan Docker, WildFly ni MySQL**:
+usan `DatosEnMemoria`, un `DatosServiceRemote` falso escrito a mano. Desde la raíz
+(Java 21 + Maven):
+
+```bash
+mvn test
+```
+
+Resultado esperado: `Tests run: 25, Failures: 0, Errors: 0, Skipped: 0` y `BUILD SUCCESS`.
+Hay al menos una prueba por cada regla de negocio y una por cada operación exitosa; la
+relación regla → prueba está en [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md#6-reglas-de-negocio-dónde-se-validan-y-qué-las-prueba).
+
+Prueba de punta a punta (cliente → logica → datos → MySQL), con el entorno levantado:
+
+```bash
+docker compose run --rm cliente    # debe terminar con "RESUMEN: 13 de 13 casos superados"
+```
+
+---
+
 ## Archivos de Docker
 
 | Archivo | Contenido |
@@ -217,8 +239,20 @@ Variables opcionales del cliente:
 
 ## Arquitectura
 
-<!-- TODO: completar al final del taller (diagrama de los 3 niveles, EJB remotos
-     entre logica y datos, direcciones JNDI ejb:EAR/módulo/Bean!interfaz, flujo de
-     una solicitud desde el Cliente hasta MySQL). -->
+```
+Cliente ──EJB remoto──▶ LogicaEAR (WildFly :8080) ──EJB remoto──▶ DatosEAR (WildFly :8090) ──JPA──▶ MySQL (:3307)
+          logica-app      reglas de negocio          datos-app       fachada + entidad + repositorio
+```
 
-_TODO: se completará al final del taller._
+- **Logica** (`LogicaService`, `@Stateless`) valida todas las reglas de negocio y solo
+  conoce la fachada `DatosServiceRemote` y los DTOs.
+- **Datos** (`DatosService`, `@Stateless`) solo guarda, consulta y actualiza; la entidad
+  `Solicitud` y JPA nunca salen de `DatosEAR`.
+
+Documentación completa:
+
+- [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md): diagramas de paquetes y de despliegue
+  (Mermaid), módulos Maven y contenido de cada EAR, cómo se desacopló el tier de negocio,
+  decisiones sobre los EJB y la tabla regla de negocio → validación → excepción → prueba.
+- [docs/EVIDENCIAS.md](docs/EVIDENCIAS.md): salida real del cliente, de `mvn test` y de
+  MySQL, y los comandos para reproducirlo.
