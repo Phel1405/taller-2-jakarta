@@ -1,14 +1,29 @@
 package com.app.logica.interfaces;
 
-import jakarta.ejb.Remote;
 import com.app.dtos.CrearSolicitudDTO;
+import com.app.dtos.SolicitudDTO;
+import com.app.dtos.excepciones.SolicitudInvalidaException;
+import com.app.dtos.excepciones.SolicitudNoEncontradaException;
+import com.app.dtos.excepciones.SolicitudYaAtendidaException;
+
+import jakarta.ejb.Remote;
+
 import java.util.List;
 
 @Remote
 public interface LogicaServiceRemote {
-	void registrarSolicitudes(String descripcion, String recurso, int cantidadRequerida, String prioridad);
-	List<CrearSolicitudDTO> consultarSolicitudes();
-	CrearSolicitudDTO consultarSolicitud(String id);
-	void atenderSolicitud(String id);
-	List<CrearSolicitudDTO> consultarSolicitudesPendientes();
+
+    /** Registra una solicitud nueva en estado PENDIENTE y la devuelve con su id. */
+    SolicitudDTO registrarSolicitudes(CrearSolicitudDTO solicitud) throws SolicitudInvalidaException;
+
+    List<SolicitudDTO> consultarSolicitudes();
+
+    SolicitudDTO consultarSolicitud(String id)
+        throws SolicitudInvalidaException, SolicitudNoEncontradaException;
+
+    /** Cambia una solicitud de PENDIENTE a ATENDIDA. */
+    SolicitudDTO atenderSolicitud(String id)
+        throws SolicitudInvalidaException, SolicitudNoEncontradaException, SolicitudYaAtendidaException;
+
+    List<SolicitudDTO> consultarSolicitudesPendientes();
 }
