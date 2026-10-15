@@ -26,6 +26,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <wildfly.version>40.0.1.Final</wildfly.version>
         <jakartaee-api.version>11.0.0</jakartaee-api.version>
+        <junit.version>5.14.4</junit.version>
     </properties>
 
     <dependencyManagement>
@@ -66,6 +67,15 @@
                 <version>${wildfly.version}</version>
                 <type>pom</type>
             </dependency>
+
+            <!-- Pruebas unitarias -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -99,6 +109,11 @@
                         <!-- Sin versión en los nombres: forman parte de ejb:EAR/módulo/Bean!interfaz -->
                         <outputFileNameMapping>@{artifactId}@.@{extension}@</outputFileNameMapping>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>

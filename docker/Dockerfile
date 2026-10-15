@@ -4,6 +4,7 @@
 #   docker compose up --build            (recomendado)
 #   docker build -f docker/Dockerfile --target logica .
 #   docker build -f docker/Dockerfile --target datos  .
+#   docker build -f docker/Dockerfile --target cliente .
 
 # ---------------------------------------------------------------------------
 # Etapa build: compila todo el proyecto Maven y genera los dos EAR.
@@ -14,9 +15,10 @@ WORKDIR /src
 COPY . .
 
 # La caché de BuildKit conserva ~/.m2 entre builds: las dependencias solo se
-# descargan la primera vez.
+# descargan la primera vez. copy-dependencies deja en Cliente/target/dependency
+# las librerías que necesita el cliente para ejecutarse (target "cliente").
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -B -ntp package -DskipTests
+    mvn -B -ntp package dependency:copy-dependencies -DincludeScope=runtime -DskipTests
 
 # ---------------------------------------------------------------------------
 # Base común de WildFly
@@ -73,3 +75,15 @@ RUN /opt/jboss/wildfly/bin/jboss-cli.sh --file=/tmp/configure-datos.cli \
     && rm -rf /tmp/drivers /opt/jboss/wildfly/standalone/configuration/standalone_xml_history
 
 COPY --from=build --chown=jboss:jboss /src/DatosEAR/target/DatosEAR.ear /opt/jboss/wildfly/standalone/deployments/
+
+# ---------------------------------------------------------------------------
+# Target cliente: cliente de consola que invoca los EJB de Logica.
+# Se ejecuta con: docker compose run --rm cliente
+# ---------------------------------------------------------------------------
+FROM eclipse-temurin:21-jre AS cliente
+
+WORKDIR /app
+COPY --from=build /src/Cliente/target/dependency/ /app/lib/
+COPY --from=build /src/Cliente/target/Cliente-*.jar /app/lib/
+
+CMD ["java", "-cp", "/app/lib/*", "com.app.cliente.Principal"]

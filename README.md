@@ -86,22 +86,26 @@ docker compose down -v             # detener Y BORRAR los datos de MySQL (volume
 ### Entrar a MySQL para inspeccionar
 
 ```bash
-docker compose exec mysql mysql -u taller_user -ptaller_pass taller_solicitudes
+docker compose exec mysql mysql --default-character-set=utf8mb4 -u taller_user -ptaller_pass taller_solicitudes
 ```
+
+(`--default-character-set=utf8mb4` hace que las tildes se vean bien; sin él, el
+cliente `mysql` del contenedor usa `latin1` y muestra `�`, aunque los datos están
+guardados correctamente.)
 
 Dentro de MySQL, por ejemplo:
 
 ```sql
 SHOW TABLES;
-DESCRIBE Solicitud;
-SELECT * FROM Solicitud;
+DESCRIBE solicitud;
+SELECT id, descripcion, prioridad, estado FROM solicitud;
 ```
 
 También puedes conectarte con un cliente gráfico (DBeaver, MySQL Workbench, etc.) a
 `localhost:3307` con el mismo usuario y contraseña.
 
 > **Aviso normal en los logs de `datos`:** si reinicias sin `down -v`, aparece
-> `WARN ... Table 'Solicitud' already exists`. Es esperado:
+> `WARN ... Table 'solicitud' already exists`. Es esperado:
 > `persistence.xml` usa `schema-generation ... = create` e intenta crear la tabla en
 > cada arranque. Si quieres empezar con la base vacía, usa `docker compose down -v`.
 
@@ -145,9 +149,9 @@ docker compose up --build       # --build es necesario si cambiaste usuarios de 
 
 `.env` no se sube al repositorio (`.gitignore` ignora `*.env`).
 
-### Variables del contenedor `logica` reservadas para más adelante
+### Variables del contenedor `logica`
 
-El servicio `logica` ya define estas variables, aunque **todavía no hay código que las lea**:
+`DatosServiceLocator` (módulo `Logica`) las lee para localizar el EJB remoto de Datos:
 
 | Variable | Valor por defecto | Significado |
 |---|---|---|
@@ -157,12 +161,53 @@ El servicio `logica` ya define estas variables, aunque **todavía no hay código
 
 ---
 
+## Ejecutar el cliente
+
+El cliente (`Cliente/src/main/java/com/app/cliente/Principal.java`) busca por JNDI
+`ejb:LogicaEAR/Logica/LogicaService!com.app.logica.interfaces.LogicaServiceRemote`
+y ejecuta los 13 casos del taller, marcando cada uno como `[OK]` / `[ERROR ESPERADO]`
+y mostrando un resumen al final. El entorno debe estar levantado (`docker compose up --build -d`).
+
+### Opción A: con Docker (no necesitas Java)
+
+```bash
+docker compose run --rm cliente
+```
+
+El servicio `cliente` tiene un *profile*, así que **no** arranca con `docker compose up`;
+solo con `run`. Se conecta a `remote+http://logica:8080` dentro de la red de Docker.
+
+### Opción B: con Maven en tu máquina (Java 21 + Maven)
+
+Desde la raíz del repositorio:
+
+```bash
+mvn install                       # compila, ejecuta las pruebas e instala los módulos en ~/.m2
+mvn -pl Cliente exec:java         # ejecuta com.app.cliente.Principal
+```
+
+`mvn install` hace falta la primera vez (y cada vez que cambies DTOs o interfaces): sin
+él, `-pl Cliente` no encuentra los módulos `DTOs` y `LogicaInterface`.
+
+Variables opcionales del cliente:
+
+| Variable | Valor por defecto |
+|---|---|
+| `LOGICA_EJB_URL` | `remote+http://localhost:8080` |
+| `LOGICA_EJB_USER` | `logica-app` |
+| `LOGICA_EJB_PASSWORD` | `logica_pass` |
+
+> Cada ejecución registra 3 solicitudes nuevas. Para empezar desde cero:
+> `docker compose down -v && docker compose up --build -d`.
+
+---
+
 ## Archivos de Docker
 
 | Archivo | Contenido |
 |---|---|
-| `docker-compose.yml` | Servicios `mysql`, `datos` y `logica`. |
-| `docker/Dockerfile` | Multi-stage: etapa `build` (Maven + JDK 21) y targets `logica` y `datos` (WildFly 40.0.1.Final). |
+| `docker-compose.yml` | Servicios `mysql`, `datos`, `logica` y `cliente` (este último con profile). |
+| `docker/Dockerfile` | Multi-stage: etapa `build` (Maven + JDK 21) targets `logica` y `datos` (WildFly 40.0.1.Final) y `cliente` (JRE 21). |
 | `docker/configure-datos.cli` | Registra el driver MySQL (módulo `com.mysql`), el datasource `MySQLDS` y `node-identifier=datos`. |
 | `docker/configure-logica.cli` | `node-identifier=logica`. |
 | `.env.example` | Todas las variables con sus valores por defecto. |

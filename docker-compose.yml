@@ -50,8 +50,8 @@ services:
         APP_USER: ${LOGICA_APP_USER:-logica-app}
         APP_PASSWORD: ${LOGICA_APP_PASSWORD:-logica_pass}
     environment:
-      # Localización del tier de datos para las llamadas EJB remotas.
-      # TODAVÍA no hay código que las lea; se usarán en tareas posteriores.
+      # Localización del tier de datos para las llamadas EJB remotas
+      # (las lee com.app.logica.services.DatosServiceLocator).
       DATOS_EJB_URL: ${DATOS_EJB_URL:-remote+http://datos:8080}
       DATOS_EJB_USER: ${DATOS_APP_USER:-datos-app}
       DATOS_EJB_PASSWORD: ${DATOS_APP_PASSWORD:-datos_pass}
@@ -59,6 +59,22 @@ services:
       - "8080:8080"
     depends_on:
       datos:
+        condition: service_started
+
+  # Cliente de consola. Tiene un profile para que NO arranque con "docker compose up".
+  # Ejecutar con:  docker compose run --rm cliente
+  cliente:
+    profiles: ["cliente"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: cliente
+    environment:
+      LOGICA_EJB_URL: remote+http://logica:8080
+      LOGICA_EJB_USER: ${LOGICA_APP_USER:-logica-app}
+      LOGICA_EJB_PASSWORD: ${LOGICA_APP_PASSWORD:-logica_pass}
+    depends_on:
+      logica:
         condition: service_started
 
 volumes:
