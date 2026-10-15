@@ -1,0 +1,27 @@
+# Salidas de compilación (los EAR se generan dentro de la imagen)
+**/target/
+**/bin/
+**/build/
+*.jar
+*.ear
+*.war
+
+# Control de versiones e IDEs
+.git
+.gitignore
+.vscode/
+.idea/
+.settings/
+.project
+.classpath
+
+# Instalaciones locales de WildFly y descargas grandes (no hacen falta para el build)
+servidores/
+*.zip
+scripts/drivers/
+
+# Secretos y archivos de Docker que no forman parte del código
+.env
+*.env
+docker-compose.yml
+README.md

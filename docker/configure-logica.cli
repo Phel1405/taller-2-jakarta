@@ -1,0 +1,7 @@
+embed-server --server-config=standalone-full.xml --std-out=echo
+
+# Identificador único del gestor de transacciones de este nodo (distinto del
+# de Datos, para que no se confundan al propagar transacciones entre EJB remotos).
+/subsystem=transactions:write-attribute(name=node-identifier, value=logica)
+
+stop-embedded-server
