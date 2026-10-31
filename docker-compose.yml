@@ -1,0 +1,81 @@
+# Levanta todo el entorno con:  docker compose up --build
+# Todas las variables tienen valor por defecto (${VAR:-valor}), así que funciona
+# sin archivo .env. Para cambiarlas, copia .env.example a .env y edítalo.
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-taller_solicitudes}
+      MYSQL_USER: ${MYSQL_USER:-taller_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-taller_pass}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_pass}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      # Por TCP (127.0.0.1) y no por socket: así no se marca "healthy" durante
+      # la inicialización, cuando MySQL arranca un servidor temporal sin red.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  datos:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: datos
+      args:
+        APP_USER: ${DATOS_APP_USER:-datos-app}
+        APP_PASSWORD: ${DATOS_APP_PASSWORD:-datos_pass}
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-taller_solicitudes}
+      MYSQL_USER: ${MYSQL_USER:-taller_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-taller_pass}
+    ports:
+      - "8090:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  logica:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: logica
+      args:
+        APP_USER: ${LOGICA_APP_USER:-logica-app}
+        APP_PASSWORD: ${LOGICA_APP_PASSWORD:-logica_pass}
+    environment:
+      # Localización del tier de datos para las llamadas EJB remotas
+      # (las lee com.app.logica.services.DatosServiceLocator).
+      DATOS_EJB_URL: ${DATOS_EJB_URL:-remote+http://datos:8080}
+      DATOS_EJB_USER: ${DATOS_APP_USER:-datos-app}
+      DATOS_EJB_PASSWORD: ${DATOS_APP_PASSWORD:-datos_pass}
+    ports:
+      - "8080:8080"
+    depends_on:
+      datos:
+        condition: service_started
+
+  # Cliente de consola. Tiene un profile para que NO arranque con "docker compose up".
+  # Ejecutar con:  docker compose run --rm cliente
+  cliente:
+    profiles: ["cliente"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: cliente
+    environment:
+      LOGICA_EJB_URL: remote+http://logica:8080
+      LOGICA_EJB_USER: ${LOGICA_APP_USER:-logica-app}
+      LOGICA_EJB_PASSWORD: ${LOGICA_APP_PASSWORD:-logica_pass}
+    depends_on:
+      logica:
+        condition: service_started
+
+volumes:
+  mysql_data:

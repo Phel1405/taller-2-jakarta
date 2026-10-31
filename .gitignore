@@ -55,3 +55,9 @@ Thumbs.db
 *.sqlite
 *.log
 *.env
+
+# ==========================================
+# Instalaciones locales de WildFly (~900 MB, no se versionan)
+# ==========================================
+servidores/
+*.zip

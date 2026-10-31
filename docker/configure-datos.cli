@@ -1,0 +1,43 @@
+embed-server --server-config=standalone-full.xml --std-out=echo
+
+# ---------------------------------------------------------------------------
+# Driver JDBC de MySQL, registrado como módulo de WildFly.
+# ---------------------------------------------------------------------------
+module add --name=com.mysql --resources=/tmp/drivers/mysql-connector-j.jar \
+    --dependencies=java.sql,java.naming,java.transaction.xa
+
+/subsystem=datasources/jdbc-driver=mysql:add( \
+    driver-module-name=com.mysql, \
+    driver-class-name=com.mysql.cj.jdbc.Driver)
+
+# ---------------------------------------------------------------------------
+# Datasource NO XA MySQLDS (unidad "Taller-Database" de Datos/persistence.xml).
+# Base de datos, usuario y contraseña quedan como expresiones ${env.*}: WildFly
+# las resuelve al arrancar el contenedor, no en tiempo de build.
+# sslMode=DISABLED + allowPublicKeyRetrieval=true: necesarios con
+# caching_sha2_password (autenticación por defecto de MySQL 8.4) sin SSL.
+# Validación: cada conexión se valida al sacarla del pool y las conexiones
+# rotas (p. ej. si MySQL se reinicia) se descartan.
+# ---------------------------------------------------------------------------
+/subsystem=datasources/data-source=MySQLDS:add( \
+    jndi-name="java:jboss/datasources/MySQLDS", \
+    driver-name=mysql, \
+    connection-url="jdbc:mysql://mysql:3306/${env.MYSQL_DATABASE}?sslMode=DISABLED&allowPublicKeyRetrieval=true", \
+    user-name="${env.MYSQL_USER}", \
+    password="${env.MYSQL_PASSWORD}", \
+    jta=true, \
+    use-ccm=true, \
+    enabled=true, \
+    min-pool-size=1, \
+    max-pool-size=10, \
+    validate-on-match=true, \
+    background-validation=false, \
+    valid-connection-checker-class-name="org.jboss.jca.adapters.jdbc.extensions.mysql.MySQLValidConnectionChecker", \
+    exception-sorter-class-name="org.jboss.jca.adapters.jdbc.extensions.mysql.MySQLExceptionSorter")
+
+# ---------------------------------------------------------------------------
+# Identificador único del gestor de transacciones de este nodo.
+# ---------------------------------------------------------------------------
+/subsystem=transactions:write-attribute(name=node-identifier, value=datos)
+
+stop-embedded-server
